@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://du2wu5lvjbjj8"]
+
+[ext_resource type="Script" uid="uid://b78rahhpgnky4" path="res://scripts/GridManager.gd" id="1_ckmgx"]
+
+[node name="Gride" type="Node2D" unique_id=1210314430 groups=["grid"]]
+script = ExtResource("1_ckmgx")
