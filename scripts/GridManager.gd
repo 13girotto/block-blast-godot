@@ -1,8 +1,8 @@
 class_name GridManager
 extends Node2D
 
-const GRID_SIZE = 8
-const TILE_SIZE = 64
+const GRID_SIZE = 12  # Aumentado de 8 para 10 (mais espaço para as peças)
+const TILE_SIZE = 48  # Ajustado de 64 para 56 para caber perfeitamente na tela de 720px
 
 # Matriz que armazena as cores dos blocos no tabuleiro
 var grid_data: Array = []
@@ -18,7 +18,7 @@ func initialize_grid() -> void:
 	for x in range(GRID_SIZE):
 		var row: Array = []
 		for y in range(GRID_SIZE):
-			row.append(Color(0, 0, 0, 0)) # Célula vazia
+			row.append(Color(0, 0, 0, 0)) # Vazio
 		grid_data.append(row)
 
 # Converte posição de mundo para coordenadas da grade

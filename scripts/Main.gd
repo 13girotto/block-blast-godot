@@ -55,16 +55,15 @@ func _on_score_updated(points: int) -> void:
 		score_label.text = "Pontos: %d" % score
 	print("Pontuação atualizada: ", score)
 
-# Gera 4 peças no dock com slots seguros e escala compacta
 func spawn_piece_dock() -> void:
 	active_pieces_in_dock = 4
 	
-	# Slots X bem distribuídos e Y ajustado para visualização confortável
 	var dock_slots_x = [80, 260, 440, 620]
 	var dock_y = 960
 	
 	for i in range(4):
 		if not piece_scene:
+			print("ERRO: piece_scene nula!")
 			return
 
 		var new_piece = piece_scene.instantiate() as PieceController
@@ -75,12 +74,13 @@ func spawn_piece_dock() -> void:
 		
 		new_piece.initial_position = target_pos
 		new_piece.global_position = target_pos
-		
-		# Escala compacta (0.55) para o dock
 		new_piece.scale = Vector2(0.55, 0.55)
 		
 		new_piece.main_controller = self
 		add_child(new_piece)
+		
+		# PRINT DE TESTE: Mostra no console a posição exata criada
+		print("Peça ", i, " gerada na global_position: ", new_piece.global_position)
 
 func notify_piece_placed() -> void:
 	active_pieces_in_dock -= 1
