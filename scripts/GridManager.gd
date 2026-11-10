@@ -1,13 +1,15 @@
 class_name GridManager
 extends Node2D
 
-const GRID_SIZE = 12  # Aumentado de 8 para 10 (mais espaço para as peças)
-const TILE_SIZE = 48  # Ajustado de 64 para 56 para caber perfeitamente na tela de 720px
+const GRID_SIZE = 12  # 12x12
+const TILE_SIZE = 48  # Ajustado para a tela
 
 # Matriz que armazena as cores dos blocos no tabuleiro
 var grid_data: Array = []
 
 signal score_updated(points: int)
+# NOVO: Sinal emitido para o MissionTracker informando quais linhas/colunas foram limpas e suas cores
+signal lines_cleared(events: Array[Dictionary])
 
 func _ready() -> void:
 	add_to_group("grid")
@@ -84,35 +86,42 @@ func check_and_clear_lines() -> void:
 	# Se houver linhas ou colunas completas, vamos processá-las
 	if completed_rows.size() > 0 or completed_cols.size() > 0:
 		var total_points = 0
-		
-		# Coleta todas as cores presentes nas linhas e colunas completas para calcular a pontuação
 		var cleared_colors: Array[Color] = []
+		
+		# NOVO: Estrutura para registrar os eventos de limpeza para as missões
+		var clearance_events: Array[Dictionary] = []
 		
 		# Limpar Linhas
 		for y in completed_rows:
+			var row_colors: Array[Color] = []
 			for x in range(GRID_SIZE):
+				row_colors.append(grid_data[x][y])
 				cleared_colors.append(grid_data[x][y])
 				grid_data[x][y] = Color(0, 0, 0, 0)
+			clearance_events.append({"type": "row", "index": y, "colors": row_colors})
 				
 		# Limpar Colunas
 		for x in completed_cols:
+			var col_colors: Array[Color] = []
 			for y in range(GRID_SIZE):
+				var current_color = grid_data[x][y]
+				col_colors.append(current_color)
 				# Evita duplicar se a célula estiver na interseção de linha e coluna limpas
-				if grid_data[x][y] != Color(0, 0, 0, 0):
-					cleared_colors.append(grid_data[x][y])
+				if current_color != Color(0, 0, 0, 0):
+					cleared_colors.append(current_color)
 					grid_data[x][y] = Color(0, 0, 0, 0)
+			clearance_events.append({"type": "col", "index": x, "colors": col_colors})
 		
 		# 3. Cálculo de Pontuação baseado nas cores iguais encontradas
-		# Contabiliza a frequência de cada cor eliminada
 		var color_counts = {}
 		for c in cleared_colors:
-			var color_key = c.to_html() # Usa o código HEX da cor como chave no dicionário
+			if c == Color(0, 0, 0, 0): continue
+			var color_key = c.to_html() 
 			if color_counts.has(color_key):
 				color_counts[color_key] += 1
 			else:
 				color_counts[color_key] = 1
 				
-		# Regra de pontuação: 10 pontos por bloco base + bônus quadrático para cores repetidas (ex: count * count * 15)
 		for color_key in color_counts:
 			var count = color_counts[color_key]
 			var points_for_this_color = (count * 10) + (count * count * 15)
@@ -121,7 +130,31 @@ func check_and_clear_lines() -> void:
 		print("Linhas/Colunas limpas! Pontos ganhos: ", total_points)
 		emit_signal("score_updated", total_points)
 		
+		# NOVO: Emite o sinal para o sistema de missões rastrear a limpeza
+		emit_signal("lines_cleared", clearance_events)
+		
 		queue_redraw()
+
+# NOVO: Função para espalhar blocos iniciais aleatórios no início de cada nível
+func fill_random_initial_blocks(count: int, allowed_colors: Array[Color]) -> void:
+	if allowed_colors.is_empty():
+		return
+		
+	var placed := 0
+	var attempts := 0
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	
+	while placed < count and attempts < 500:
+		attempts += 1
+		var rx = rng.randi_range(0, GRID_SIZE - 1)
+		var ry = rng.randi_range(0, GRID_SIZE - 1)
+		
+		if grid_data[rx][ry] == Color(0, 0, 0, 0):
+			grid_data[rx][ry] = allowed_colors.pick_random()
+			placed += 1
+			
+	queue_redraw()
 
 # Desenha visualmente a grade e os blocos fixados nela
 func _draw() -> void:
@@ -131,8 +164,6 @@ func _draw() -> void:
 			var color = grid_data[x][y]
 			
 			if color == Color(0, 0, 0, 0):
-				# Cor padrão do fundo da célula vazia na grade
 				draw_rect(rect, Color(0.18, 0.18, 0.24))
 			else:
-				# Desenha o bloco preenchido com a sua respectiva cor
 				draw_rect(rect, color)
